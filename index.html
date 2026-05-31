@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manejador de Gastos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="dist/JavaScript.js"></script>
+    <script src="dist/stilos.css"></script>
+    <link rel="stylesheet" href="dist/stilos.css">
+    
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">💰</div>
+            <h1>Manejador de Gastos</h1>
+        </div>
+        <div class="month-nav">
+            <button onclick="changeMonth(-1)">‹</button>
+            <span id="currentMonth">Mayo 2026</span>
+            <button onclick="changeMonth(1)">›</button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card income">
+            <div class="label">📈 Ingresos</div>
+            <div class="amount" id="totalIncome">$0.00</div>
+        </div>
+        <div class="summary-card expense">
+            <div class="label">📉 Gastos</div>
+            <div class="amount" id="totalExpense">$0.00</div>
+        </div>
+        <div class="summary-card balance">
+            <div class="label">💵 Disponible</div>
+            <div class="amount" id="totalBalance">$0.00</div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <div class="section-title">
+                📊 Gastos por Categoría
+                <span id="chartTotal" style="font-size:13px;color:var(--text-secondary);font-weight:400"></span>
+            </div>
+            <div class="chart-container">
+                <canvas id="expenseChart"></canvas>
+                <div id="chartEmpty" class="chart-empty" style="display:none">
+                    <span>📊</span>
+                    <p>Sin datos para mostrar</p>
+                </div>
+            </div>
+            <div id="chartLegend" class="chart-legend"></div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div class="transactions-section">
+            <div class="transactions-header">
+                <div class="section-title">💳 Transacciones</div>
+                <div class="filter-tabs">
+                    <button class="active" data-filter="all" onclick="setFilter('all')">Todas</button>
+                    <button data-filter="income" onclick="setFilter('income')">Ingresos</button>
+                    <button data-filter="expense" onclick="setFilter('expense')">Gastos</button>
+                </div>
+            </div>
+            <div class="transactions-list" id="transactionsList">
+                <div class="empty-state">
+                    <span>📝</span>
+                    <p>Sin transacciones aún</p>
+                    <p style="font-size:13px;margin-top:8px">Presiona + para agregar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Section -->
+    <div class="templates-section">
+        <div class="templates-header" onclick="toggleTemplates()">
+            <h2>📋 Plantillas <span id="templateCount" style="font-size:12px;font-weight:400;color:var(--text-secondary)"></span></h2>
+            <span class="templates-toggle" id="templatesToggle">▼</span>
+        </div>
+        <div class="templates-content" id="templatesContent">
+            <div class="template-grid" id="templateGrid">
+                <button class="add-template-btn" onclick="openTemplateModal()">
+                    <span>+</span> Nueva Plantilla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openTransactionModal()">+</button>
+
+<!-- Transaction Modal -->
+<div class="modal-overlay" id="transactionModal">
+    <div class="modal">
+        <h2 id="modalTitle">Nueva Transacción</h2>
+        <div class="type-toggle">
+            <button id="typeIncome" class="active income" onclick="setType('income')">Ingreso</button>
+            <button id="typeExpense" onclick="setType('expense')">Gasto</button>
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <input type="text" id="descInput" placeholder="Ej: Pago de alquiler">
+        </div>
+        <div class="form-group">
+            <label>Monto</label>
+            <input type="text" inputmode="numeric" id="amountInput" placeholder="0" oninput="formatInputCurrency(this)">
+        </div>
+        <div class="form-group" id="categoryGroup">
+            <label>Categoría</label>
+            <select id="categorySelect">
+                <option value="">Seleccionar categoría</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" id="dateInput">
+        </div>
+        <div class="manage-categories">
+            <span onclick="openCategoryModal()">+ Gestionar categorías</span>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeTransactionModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveTransaction()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Template Modal -->
+<div class="modal-overlay" id="templateModal">
+    <div class="modal" style="max-width:500px">
+        <h2>Nueva Plantilla</h2>
+        <div class="form-group">
+            <label>Nombre de plantilla</label>
+            <input type="text" id="templateNameInput" placeholder="Ej: Gastos fijos mensuales">
+        </div>
+        <div class="form-group">
+            <label>Descripción (opcional)</label>
+            <input type="text" id="templateDescInput" placeholder="Ej: Todos los gastos fijos del mes">
+        </div>
+        <div class="form-group">
+            <label>📋 Gastos en esta plantilla</label>
+            <div id="templateItemsList" class="template-items-list"></div>
+            <button class="add-item-btn" onclick="addTemplateItem()">+ Agregar gasto</button>
+        </div>
+        <div class="template-total" id="templateTotalAmount">Total: $0.00</div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveTemplate()">Crear</button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-overlay" id="categoryModal">
+    <div class="modal">
+        <h2>Gestionar Categorías</h2>
+        <div id="categoryList" class="category-list"></div>
+        <div class="add-category-form">
+            <input type="text" id="newCategoryInput" placeholder="Nueva categoría">
+            <button onclick="addCategory()">Añadir</button>
+        </div>
+        <div class="modal-actions" style="margin-top:16px">
+            <button class="btn btn-secondary" onclick="closeCategoryModal()" style="flex:1">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<script src="dist/JavaScript.js"></script>
+
+</body>
+</html>
